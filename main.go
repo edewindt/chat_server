@@ -1,7 +1,11 @@
 package main
 
-import "fmt"
+import (
+	"net/http"
+)
 
 func main() {
-	fmt.Println("Hello Dude")
+	mux := routes()
+
+	_ = http.ListenAndServe(":8080", mux)
 }
