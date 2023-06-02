@@ -85,6 +85,30 @@ func ListenForWs(conn *WebSocketConnection) {
 	}
 }
 
+func ListenToWsChannel() {
+	var response WsJsonResponse
+
+	for {
+		e := <-wsChan
+
+		response.Action = "Arrived!"
+		response.Message = fmt.Sprintf("Some Message: %s", e.Action)
+		broadcastToAll(response)
+
+	}
+}
+
+func broadcastToAll(response WsJsonResponse) {
+	for client := range clients {
+		err := client.WriteJSON(response)
+		if err != nil {
+			log.Println("socket error")
+			_ = client.Close()
+			delete(clients, client)
+		}
+	}
+}
+
 func renderPage(w http.ResponseWriter, tpl string, data jet.VarMap) error {
 	view, err := views.GetTemplate(tpl)
 	if err != nil {
