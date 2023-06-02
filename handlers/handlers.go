@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -8,7 +9,12 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var views = jet.NewSet(jet.NewOSFileSystemLoader("./html"),
+var wsChan = make(chan WsPayload)
+
+var clients = make(map[WebSocketConnection]string)
+
+var views = jet.NewSet(
+	jet.NewOSFileSystemLoader("./html"),
 	jet.InDevelopmentMode())
 
 var upgradeConnection = websocket.Upgrader{
@@ -24,10 +30,21 @@ func Home(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type WebSocketConnection struct {
+	*websocket.Conn
+}
+
 type WsJsonResponse struct {
 	Action      string `json:"action"`
 	Message     string `json:"message"`
 	MessageType string `json:"message_type"`
+}
+
+type WsPayload struct {
+	Action   string              `json:"action"`
+	Username string              `json:"username"`
+	Message  string              `json:"message"`
+	Conn     WebSocketConnection `json:"-"`
 }
 
 func WsEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -40,9 +57,31 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 	var response WsJsonResponse
 	response.Message = `<em><small>Connected to server</small></em>`
 
+	conn := WebSocketConnection{Conn: ws}
+	clients[conn] = ""
+
 	err = ws.WriteJSON(response)
 	if err != nil {
 		log.Println(err)
+	}
+	go ListenForWs(&conn)
+}
+
+func ListenForWs(conn *WebSocketConnection) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("Error", fmt.Sprintf("%v", r))
+		}
+	}()
+	var payload WsPayload
+	for {
+		err := conn.ReadJSON(&payload)
+		if err != nil {
+
+		} else {
+			payload.Conn = *conn
+			wsChan <- payload
+		}
 	}
 }
 
