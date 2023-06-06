@@ -113,7 +113,7 @@ func ListenToWsChannel() {
 			broadcastToAll(response)
 		case "broadcast":
 			response.Action = "broadcast"
-			response.Message = fmt.Sprintf("<strong>%s</strong>: %s", e.Username, e.Message)
+			response.Message = fmt.Sprintf("%s: %s \n", e.Username, e.Message)
 			broadcastToAll(response)
 		case "is_typing":
 			response.Action = "is_typing"
@@ -122,6 +122,7 @@ func ListenToWsChannel() {
 			response.TypingUsers = typing_users
 			broadcastToAll(response)
 		case "stopped_typing":
+			fmt.Println("Stopped typing")
 			response.Action = "is_typing"
 			delete(typing_clients, e.Conn)
 			typing_users := getTypingUsers()
