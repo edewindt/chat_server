@@ -107,6 +107,7 @@ func ListenToWsChannel() {
 		case "left":
 			response.Action = "list_users"
 			delete(clients, e.Conn)
+			delete(typing_clients, e.Conn)
 			users := getUserList()
 			response.ConnectedUsers = users
 			broadcastToAll(response)
@@ -126,12 +127,7 @@ func ListenToWsChannel() {
 			typing_users := getUserList()
 			response.TypingUsers = typing_users
 			broadcastToAll(response)
-			//get a list of all users and send it back via broadcast
 		}
-
-		// response.Action = "Arrived!"
-		// response.Message = fmt.Sprintf("Some Message: %s", e.Action)
-		// broadcastToAll(response)
 
 	}
 }
