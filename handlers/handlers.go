@@ -124,7 +124,7 @@ func ListenToWsChannel() {
 		case "stopped_typing":
 			response.Action = "is_typing"
 			delete(typing_clients, e.Conn)
-			typing_users := getUserList()
+			typing_users := getTypingUsers()
 			response.TypingUsers = typing_users
 			broadcastToAll(response)
 		}
