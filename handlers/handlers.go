@@ -14,6 +14,8 @@ var wsChan = make(chan WsPayload)
 
 var clients = make(map[WebSocketConnection]string)
 
+var typing_clients = make(map[WebSocketConnection]string)
+
 var views = jet.NewSet(
 	jet.NewOSFileSystemLoader("./html"),
 	jet.InDevelopmentMode())
@@ -40,6 +42,7 @@ type WsJsonResponse struct {
 	Message        string   `json:"message"`
 	MessageType    string   `json:"message_type"`
 	ConnectedUsers []string `json:"connected_users"`
+	TypingUsers    []string `json:"typing_users"`
 }
 
 type WsPayload struct {
@@ -107,6 +110,22 @@ func ListenToWsChannel() {
 			users := getUserList()
 			response.ConnectedUsers = users
 			broadcastToAll(response)
+		case "broadcast":
+			response.Action = "broadcast"
+			response.Message = fmt.Sprintf("<strong>%s</strong>: %s", e.Username, e.Message)
+			broadcastToAll(response)
+		case "is_typing":
+			response.Action = "is_typing"
+			typing_clients[e.Conn] = e.Username
+			typing_users := getTypingUsers()
+			response.TypingUsers = typing_users
+			broadcastToAll(response)
+		case "stopped_typing":
+			response.Action = "is_typing"
+			delete(typing_clients, e.Conn)
+			typing_users := getUserList()
+			response.TypingUsers = typing_users
+			broadcastToAll(response)
 			//get a list of all users and send it back via broadcast
 		}
 
@@ -120,7 +139,20 @@ func ListenToWsChannel() {
 func getUserList() []string {
 	var userList []string
 	for _, x := range clients {
-		userList = append(userList, x)
+		if x != "" {
+			userList = append(userList, x)
+		}
+	}
+	sort.Strings(userList)
+	return userList
+}
+
+func getTypingUsers() []string {
+	var userList []string
+	for _, x := range typing_clients {
+		if x != "" {
+			userList = append(userList, x)
+		}
 	}
 	sort.Strings(userList)
 	return userList
